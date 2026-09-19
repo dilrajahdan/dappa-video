@@ -1,0 +1,76 @@
+{
+  "name": "@dappa/video",
+  "version": "0.1.0",
+  "description": "Browser video primitives: countdown, thumbnails and optional camera effects",
+  "license": "MIT",
+  "author": "Dil Ahdan",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dilrajahdan/dappa-video.git"
+  },
+  "homepage": "https://github.com/dilrajahdan/dappa-video#readme",
+  "bugs": "https://github.com/dilrajahdan/dappa-video/issues",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    "./countdown": {
+      "types": "./dist/countdown.d.ts",
+      "import": "./dist/countdown.js"
+    },
+    "./beeper": {
+      "types": "./dist/beeper.d.ts",
+      "import": "./dist/beeper.js"
+    },
+    "./ticker": {
+      "types": "./dist/ticker.d.ts",
+      "import": "./dist/ticker.js"
+    },
+    "./effects": {
+      "types": "./dist/effects.d.ts",
+      "import": "./dist/effects.js"
+    },
+    "./thumbnail": {
+      "types": "./dist/thumbnail.d.ts",
+      "import": "./dist/thumbnail.js"
+    },
+    "./processing": {
+      "types": "./dist/processing.d.ts",
+      "import": "./dist/processing.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "docs/quickstart.md",
+    "docs/api.md",
+    "docs/architecture.md",
+    "ROADMAP.md",
+    "CONTRIBUTING.md",
+    "CHANGELOG.md",
+    "THIRD_PARTY.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check-types": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "lint": "biome check src tests scripts *.json *.ts",
+    "check": "bun run lint && bun run check-types && bun run test && bun run build",
+    "prepack": "bun run build",
+    "test:consumer": "bun scripts/consumer-smoke.mjs"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.2.0",
+    "typescript": "5.9.2",
+    "vitest": "4.1.10",
+    "jsdom": "29.1.1",
+    "playwright-core": "1.62.1"
+  },
+  "packageManager": "bun@1.2.9",
+  "keywords": [
+    "video",
+    "recording",
+    "thumbnail",
+    "countdown",
+    "browser"
+  ]
+}
