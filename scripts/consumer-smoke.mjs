@@ -19,7 +19,12 @@ try {
       name: "independent-video-consumer",
       private: true,
       type: "module",
-      dependencies: { "@dappa/video": dependency },
+      dependencies: {
+        "@dappa/video": dependency,
+        react: "^19.0.0",
+        "react-dom": "^19.0.0",
+        vue: "^3.5.0",
+      },
     }),
   );
   const install = Bun.spawn(["bun", "install", "--ignore-scripts"], {
@@ -34,7 +39,7 @@ try {
       "utf8",
     ),
   );
-  assert.equal(installed.version, "0.1.0");
+  assert.equal(installed.version, "0.2.0");
   assert.equal(Object.keys(installed.dependencies ?? {}).length, 0);
   for (const entry of Object.values(installed.exports)) {
     await readFile(join(consumer, "node_modules/@dappa/video", entry.types));
@@ -51,9 +56,21 @@ try {
     window.videoLibrary = {startCountdown,createThumbnail,createTicker,createFrameProcessor,primeBeeper,beepTick,beepGo};
   `,
   );
+  const entryPath = join(consumer, "entry.js");
+  await writeFile(
+    entryPath,
+    `${await readFile(entryPath, "utf8")}\n${await readFile(new URL("./framework-fixture.js", import.meta.url), "utf8")}`,
+  );
   const build = await Bun.build({
     entrypoints: [join(consumer, "entry.js")],
     target: "browser",
+    define: {
+      "process.env.NODE_ENV": '"production"',
+      "process.env": "{}",
+      __VUE_OPTIONS_API__: "true",
+      __VUE_PROD_DEVTOOLS__: "false",
+      __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: "false",
+    },
   });
   assert.ok(build.success, build.logs.map(String).join("\n"));
   const bundle = await build.outputs[0].text();
@@ -209,6 +226,55 @@ try {
   assert.ok(result.ticks > 0);
   assert.equal(result.ticks, result.stopped);
   assert.deepEqual(result.cancelTicks, [1]);
+  assert.deepEqual(errors, []);
+  const frameworks = {};
+  for (const framework of ["vue", "react"]) {
+    await page.evaluate((kind) => window.mountRecorder(kind), framework);
+    await page.getByRole("button", { name: "Start", exact: true }).click();
+    await page.waitForFunction(
+      () =>
+        document.querySelector("#recorder-status")?.textContent ===
+        "countdown 3",
+    );
+    await page.waitForFunction(
+      () =>
+        document.querySelector("#recorder-status")?.textContent ===
+        "recording 0",
+    );
+    await page.waitForTimeout(1200);
+    await page.getByRole("button", { name: "Pause", exact: true }).click();
+    await page.waitForFunction(
+      () => window.recorderForCheck.state.status === "paused",
+    );
+    await page.getByRole("button", { name: "Resume", exact: true }).click();
+    await page.waitForTimeout(1000);
+    await page.getByRole("button", { name: "Stop", exact: true }).click();
+    await page.waitForFunction(
+      () => window.recorderForCheck.state.status === "ready",
+    );
+    await page.waitForFunction(
+      () => document.querySelector("#recorder-preview")?.readyState >= 2,
+    );
+    frameworks[framework] = await page.evaluate(() => ({
+      bytes: window.recorderForCheck.state.blob.size,
+      width: document.querySelector("#recorder-preview").videoWidth,
+    }));
+    assert.ok(frameworks[framework].bytes > 8192);
+    assert.ok(frameworks[framework].width > 0);
+    await page.getByRole("button", { name: "Start", exact: true }).click();
+    await page.waitForFunction(
+      () => window.recorderForCheck.state.status === "countdown",
+    );
+    await page.evaluate(() => window.unmountRecorder());
+    assert.ok(
+      await page.evaluate(() =>
+        window.captureStreamForCheck
+          .getTracks()
+          .every((track) => track.readyState === "ended"),
+      ),
+    );
+  }
+  result.frameworks = frameworks;
   assert.deepEqual(errors, []);
   await page.screenshot({
     path: join(artifacts, "consumer.png"),

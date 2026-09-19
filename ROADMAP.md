@@ -8,8 +8,9 @@ Thumbnails           Supabase adapter      Trim export
 Effect interface     App integrations      Transcription
 ```
 
-## Ready in v0.1.0
+## Ready in v0.2.0
 
+- Shared recording session with Vue and React lifecycle wrappers.
 - Cancellable countdown and audio cues.
 - Optimised thumbnails with an optional drawing overlay.
 - A bounded worker clock.
@@ -18,7 +19,7 @@ Effect interface     App integrations      Transcription
 
 ## Next release priority: finish a reliable shared recorder
 
-1. Extract the actual capture session and save recoverable chunks during recording.
+1. Save recoverable chunks during recording. The shared session and wrappers are now extracted.
 2. Add storage contracts and a Supabase adapter. Separate “file stored” from “attached to the app's record”.
 3. Migrate ActionMode first, then CargoMode and SGSS, with the actual recording and upload path tested in each.
 4. Measure the background frame-drop problem and replace the processing behind its plugin interface.

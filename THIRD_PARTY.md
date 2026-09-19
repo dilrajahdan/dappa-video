@@ -2,13 +2,13 @@
 
 ## Included code
 
-The six source modules were extracted from Dappa's ActionMode video primitives. This repository starts with new history and contains no private app history, credentials, customer data, recording UI or background model.
+The initial six source modules were extracted from Dappa's ActionMode video primitives. The recording controller and Vue/React wrappers were added here. This repository starts with new history and contains no private app history, credentials, customer data, recording UI or background model.
 
 The included code is released under the root MIT licence. Cap was a design reference during research; no Cap source was copied. FFmpeg, MediaPipe and other model or codec binaries are not included.
 
 ## Runtime dependencies
 
-None. The code uses browser APIs. Adding a future effect, storage provider or encoder brings its own dependencies and licence review.
+The core uses browser APIs. Optional React and Vue peer dependencies are required only when importing the corresponding wrapper. Adding a future effect, storage provider or encoder brings its own dependencies and licence review.
 
 ## Development tools
 

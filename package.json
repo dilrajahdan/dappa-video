@@ -1,6 +1,6 @@
 {
   "name": "@dappa/video",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Browser video primitives: countdown, thumbnails and optional camera effects",
   "license": "MIT",
   "author": "Dil Ahdan",
@@ -36,6 +36,18 @@
     "./processing": {
       "types": "./dist/processing.d.ts",
       "import": "./dist/processing.js"
+    },
+    "./recorder": {
+      "types": "./dist/recorder.d.ts",
+      "import": "./dist/recorder.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js"
+    },
+    "./vue": {
+      "types": "./dist/vue.d.ts",
+      "import": "./dist/vue.js"
     }
   },
   "files": [
@@ -47,7 +59,8 @@
     "ROADMAP.md",
     "CONTRIBUTING.md",
     "CHANGELOG.md",
-    "THIRD_PARTY.md"
+    "THIRD_PARTY.md",
+    "docs/frameworks.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -60,10 +73,15 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.0",
+    "@types/react": "19",
+    "@types/react-dom": "19",
+    "jsdom": "29.1.1",
+    "playwright-core": "1.62.1",
+    "react": "19",
+    "react-dom": "19",
     "typescript": "5.9.2",
     "vitest": "4.1.10",
-    "jsdom": "29.1.1",
-    "playwright-core": "1.62.1"
+    "vue": "3.5"
   },
   "packageManager": "bun@1.2.9",
   "keywords": [
@@ -72,5 +90,17 @@
     "thumbnail",
     "countdown",
     "browser"
-  ]
+  ],
+  "peerDependencies": {
+    "react": ">=18 <20",
+    "vue": ">=3.3 <4"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    }
+  }
 }
