@@ -14,9 +14,9 @@ ActionMode       CargoMode       SGSS
 
 **Build video features once. Reuse them across your apps.**
 
-Small, framework-independent building blocks for browser video. No runtime dependencies. No server, account or API key required for these primitives.
+Small, framework-independent building blocks for browser video. No core runtime dependencies. The optional Vue and React wrappers use your app’s framework. No server, account or API key required for these primitives.
 
-> **Early release, v0.1.0:** countdowns and thumbnails are ready to use. This is not yet a complete recorder, uploader or video editor.
+> **Early release, v0.2.0:** recording sessions now have Vue and React wrappers. Bring your own UI and upload code; this is not a hosted recorder or video editor.
 
 ## Pick your next step
 
@@ -25,6 +25,7 @@ Small, framework-independent building blocks for browser video. No runtime depen
 | Use it in an app | [5-minute quickstart](docs/quickstart.md) |
 | Understand the droplet question | [Where it runs](docs/architecture.md) |
 | See what is ready and what comes next | [Roadmap](ROADMAP.md) |
+| Add the Vue or React recorder | [Framework wrappers](docs/frameworks.md) |
 | Look up a function | [API guide](docs/api.md) |
 | Change the library | [Contributing](CONTRIBUTING.md) |
 
@@ -39,7 +40,8 @@ Small, framework-independent building blocks for browser video. No runtime depen
 | Worker clock with bounded queued ticks | Included; drawing still runs on the host thread |
 | Background-effect plugin interface | Included; the background model is not bundled |
 | One-at-a-time asynchronous effect scheduling | Included; connect your own worker |
-| Complete recording UI and session lifecycle | Planned |
+| Recording session with Vue and React wrappers | Included |
+| Ready-made recording UI | Bring your app’s UI |
 | Supabase upload adapter | Planned |
 | Video transcoding, trimming and transcription | Planned |
 
@@ -49,7 +51,7 @@ Small, framework-independent building blocks for browser video. No runtime depen
 1. **In your app's terminal**, beside its `package.json`, run:
 
    ```sh
-   bun add https://github.com/dilrajahdan/dappa-video/releases/download/v0.1.0/dappa-video-0.1.0.tgz
+   bun add https://github.com/dilrajahdan/dappa-video/releases/download/v0.2.0/dappa-video-0.2.0.tgz
    ```
 
 2. **In your browser code**, import the part you need:
@@ -71,7 +73,7 @@ The library runs inside that app's browser bundle. Your existing app continues h
 
 Clone this repository when you want to **develop the library**. Install a release when you want to **use the library**. Each app pins its own version, so a library release cannot silently change every app.
 
-Later, the droplet could host a separate worker for heavy transcoding or transcription. That worker would need a queue, resource limits and app authentication. It is not part of v0.1.0, and no droplet capacity assessment has been made. [See the diagram](docs/architecture.md).
+Later, the droplet could host a separate worker for heavy transcoding or transcription. That worker would need a queue, resource limits and app authentication. It is not part of v0.2.0, and no droplet capacity assessment has been made. [See the diagram](docs/architecture.md).
 
 ## Background images stay possible
 

@@ -56,7 +56,7 @@ Fix the library once -> publish v0.2.0
 
 Apps stay on their installed version until deliberately upgraded. Commit the app's lockfile. Do not depend on a moving `main` branch for production.
 
-The initial ActionMode integration is still a workspace copy in a draft PR. It has not been switched to this release. CargoMode and SGSS have not been migrated. This repo is now the home for future shared-library changes; the integration follow-up should remove the duplicate workspace implementation.
+The initial ActionMode integration is still a workspace copy in a draft PR. It has not been switched to this release. SGSS is the first Vue-wrapper migration in progress. CargoMode has not been migrated. This repo is now the home for future shared-library changes; the integration follow-up should remove the duplicate workspace implementation.
 
 ## Supabase and buckets
 
