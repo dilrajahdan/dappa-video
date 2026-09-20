@@ -317,4 +317,15 @@ describe("host contracts", () => {
     expect(r.getSnapshot().durationSeconds).toBe(5);
     r.destroy();
   });
+  it("publishes once per whole second while recording, not per tick", async () => {
+    const r = createRecorder({ countdownSeconds: 0 });
+    const listener = vi.fn();
+    r.subscribe(listener);
+    await r.start(async () => fakeStream().stream);
+    listener.mockClear();
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(listener).toHaveBeenCalledTimes(10);
+    expect(r.getSnapshot().durationSeconds).toBe(10);
+    r.destroy();
+  });
 });

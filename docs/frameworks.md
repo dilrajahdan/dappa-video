@@ -11,7 +11,7 @@ Both wrappers expose `state`, `start`, `stop`, `pause`, `resume` and `reset`. Op
 
 ## Vue 3 / Nuxt
 
-0. Prerequisites: install the v0.2.3 archive from the README in an app using Vue 3.3 or later.
+0. Prerequisites: install the v0.2.4 archive from the README in an app using Vue 3.3 or later.
 1. In a component's `<script setup>`, add:
 
    ```ts

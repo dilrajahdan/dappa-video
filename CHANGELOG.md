@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.4, 2026-09-21
+
+While recording, the snapshot updates once per whole second instead of on every 200ms tick, so a host renders once a second. Pause and stop still carry exact active milliseconds.
+
 ## 0.2.3, 2026-09-21
 
 The duration clock re-arms on resume, aligned to that moment, so whole seconds render on time after a pause. Pausing stops the clock instead of leaving it ticking idle.
