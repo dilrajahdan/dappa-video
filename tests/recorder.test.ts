@@ -305,4 +305,16 @@ describe("host contracts", () => {
     expect(s.resume()).toBe(false);
     s.destroy();
   });
+  it("shows whole seconds on time after a resume, whatever the original tick alignment", async () => {
+    const r = createRecorder({ countdownSeconds: 0 });
+    await r.start(async () => fakeStream().stream);
+    // Pause off the 200ms grid, as a click lands in a real browser.
+    await vi.advanceTimersByTimeAsync(2070);
+    r.pause();
+    await vi.advanceTimersByTimeAsync(30_000);
+    r.resume();
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(r.getSnapshot().durationSeconds).toBe(5);
+    r.destroy();
+  });
 });

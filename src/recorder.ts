@@ -176,6 +176,23 @@ export function createRecorder(options: RecorderOptions = {}) {
       (snapshot.status === "recording" ? Date.now() - activeSince : 0)
     );
   }
+  /** The 200ms clock, aligned to the moment recording (re)starts so a host shows whole seconds on time. */
+  function armTimer() {
+    clearInterval(timer);
+    timer = setInterval(() => {
+      if (snapshot.status !== "recording") return;
+      const elapsed = activeMs();
+      publish({
+        durationSeconds: Math.floor(elapsed / 1000),
+        activeMilliseconds: elapsed,
+      });
+      if (
+        options.maxDurationSeconds !== undefined &&
+        elapsed >= options.maxDurationSeconds * 1000
+      )
+        stop();
+    }, 200);
+  }
   function stop() {
     if (destroyed) return;
     if (snapshot.status === "acquiring" || snapshot.status === "countdown") {
@@ -306,19 +323,7 @@ export function createRecorder(options: RecorderOptions = {}) {
                 typeof instance.resume === "function",
             });
             if (options.audioCues) beepGo();
-            timer = setInterval(() => {
-              if (snapshot.status !== "recording") return;
-              const elapsed = activeMs();
-              publish({
-                durationSeconds: Math.floor(elapsed / 1000),
-                activeMilliseconds: elapsed,
-              });
-              if (
-                options.maxDurationSeconds !== undefined &&
-                elapsed >= options.maxDurationSeconds * 1000
-              )
-                stop();
-            }, 200);
+            armTimer();
           } catch (error) {
             fail(error);
           }
@@ -363,6 +368,8 @@ export function createRecorder(options: RecorderOptions = {}) {
         return false;
       }
       elapsedMs = activeMs();
+      clearInterval(timer);
+      timer = undefined;
       publish({
         status: "paused",
         durationSeconds: Math.floor(elapsedMs / 1000),
@@ -385,6 +392,7 @@ export function createRecorder(options: RecorderOptions = {}) {
       }
       activeSince = Date.now();
       publish({ status: "recording" });
+      armTimer();
       return true;
     },
     destroy() {

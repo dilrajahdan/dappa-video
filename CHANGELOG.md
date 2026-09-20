@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.3, 2026-09-21
+
+The duration clock re-arms on resume, aligned to that moment, so whole seconds render on time after a pause. Pausing stops the clock instead of leaving it ticking idle.
+
 ## 0.2.2, 2026-09-21
 
 The snapshot reports `canPause` for the current take. `pause()` and `resume()` return whether they acted, skip a browser without pause support and skip a recorder the browser has already ended instead of failing the take.
