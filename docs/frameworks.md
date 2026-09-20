@@ -11,7 +11,7 @@ Both wrappers expose `state`, `start`, `stop`, `pause`, `resume` and `reset`. Op
 
 ## Vue 3 / Nuxt
 
-0. Prerequisites: install the v0.2.0 archive from the README in an app using Vue 3.3 or later.
+0. Prerequisites: install the v0.2.1 archive from the README in an app using Vue 3.3 or later.
 1. In a component's `<script setup>`, add:
 
    ```ts
@@ -61,7 +61,9 @@ Both wrappers expose `state`, `start`, `stop`, `pause`, `resume` and `reset`. Op
 ## State and ownership
 
 - Status: `idle`, `acquiring`, `countdown`, `recording`, `paused`, `stopping`, `ready` or `error`.
-- Snapshot includes countdown, active duration in seconds, Blob, preview URL, actual MIME type and error text.
+- Snapshot includes countdown, active duration in seconds, exact `activeMilliseconds`, Blob, preview URL, actual MIME type and error text.
+- Options: `countdownSeconds`, `audioCues`, `maxDurationSeconds`, `videoBitsPerSecond`, `audioBitsPerSecond` (omitted leaves the browser default) and `mimeTypes`.
+- `onTake(take)` fires once per finished take with bytes: after a normal stop, and when `reset()` or an unmount interrupts an active recording. Stash durable takes there; the snapshot never shows an interrupted take.
 - `start(acquire)` invokes acquisition immediately in the click path. It resolves after acquisition/countdown setup, not after recording finishes. `false` means it did not start that attempt.
 - The controller owns all tracks returned by `acquire`, including a result arriving after cancellation. Return only streams it is allowed to stop.
 - `stop()` cancels acquisition/countdown or finalises recording. `reset()` discards it. Do not upload before status is `ready`.

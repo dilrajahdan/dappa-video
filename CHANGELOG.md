@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1, 2026-09-21
+
+Recorder options gain `audioBitsPerSecond` and `onTake`. The snapshot carries exact `activeMilliseconds` next to floored seconds. `onTake` also receives the bytes of a recording that `reset()` or an unmount interrupted, so a host can keep the take durable without a second recorder. The active clock uses `Date.now()`.
+
 ## 0.2.0, 2026-09-19
 
 Shared recording session with React and Vue wrappers, cancellable countdown, optional audio cues, pause/resume, active-time duration, configured time limit, MIME selection, preview URLs and cleanup. Both wrappers are verified in Chrome against an installed release archive. Uploads, durable chunks and background inference remain app-owned or future work.
