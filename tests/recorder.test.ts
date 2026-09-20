@@ -275,4 +275,34 @@ describe("host contracts", () => {
     r.destroy();
     second.destroy();
   });
+  it("reports pause support and leaves an unsupported or stale recorder alone", async () => {
+    class NoPause extends FakeMediaRecorder {
+      // @ts-expect-error older Safari has no pause/resume
+      pause = undefined;
+    }
+    vi.stubGlobal("MediaRecorder", NoPause);
+    const r = createRecorder({ countdownSeconds: 0 });
+    await r.start(async () => fakeStream().stream);
+    expect(r.getSnapshot().canPause).toBe(false);
+    expect(r.pause()).toBe(false);
+    expect(r.getSnapshot().status).toBe("recording");
+    r.destroy();
+
+    vi.stubGlobal("MediaRecorder", FakeMediaRecorder);
+    const s = createRecorder({ countdownSeconds: 0 });
+    await s.start(async () => fakeStream().stream);
+    expect(s.getSnapshot().canPause).toBe(true);
+    const instance = FakeMediaRecorder.instances.at(-1);
+    const pauseSpy = vi.spyOn(instance as FakeMediaRecorder, "pause");
+    // The browser ended the recording behind our back: pausing it would throw.
+    (instance as FakeMediaRecorder).state = "inactive";
+    expect(s.pause()).toBe(false);
+    expect(pauseSpy).not.toHaveBeenCalled();
+    expect(s.getSnapshot().status).toBe("recording");
+    (instance as FakeMediaRecorder).state = "recording";
+    expect(s.pause()).toBe(true);
+    expect(s.resume()).toBe(true);
+    expect(s.resume()).toBe(false);
+    s.destroy();
+  });
 });

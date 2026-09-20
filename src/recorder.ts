@@ -16,6 +16,8 @@ export type RecorderSnapshot = Readonly<{
   durationSeconds: number;
   /** Exact active recording time so hosts can round their own way. */
   activeMilliseconds: number;
+  /** Whether this browser's MediaRecorder can pause and resume the current take. */
+  canPause: boolean;
   blob: Blob | null;
   previewUrl: string | null;
   mimeType: string | null;
@@ -48,6 +50,7 @@ export const INITIAL_RECORDER_SNAPSHOT: RecorderSnapshot = Object.freeze({
   countdown: 0,
   durationSeconds: 0,
   activeMilliseconds: 0,
+  canPause: false,
   blob: null,
   previewUrl: null,
   mimeType: null,
@@ -298,6 +301,9 @@ export function createRecorder(options: RecorderOptions = {}) {
               durationSeconds: 0,
               activeMilliseconds: 0,
               countdown: 0,
+              canPause:
+                typeof instance.pause === "function" &&
+                typeof instance.resume === "function",
             });
             if (options.audioCues) beepGo();
             timer = setInterval(() => {
@@ -342,29 +348,44 @@ export function createRecorder(options: RecorderOptions = {}) {
     start,
     stop,
     reset,
-    pause() {
-      if (!recorder || snapshot.status !== "recording") return;
+    /** True when the take paused. A browser without pause, or a stale recorder, is left alone. */
+    pause(): boolean {
+      if (
+        !recorder ||
+        snapshot.status !== "recording" ||
+        !snapshot.canPause ||
+        recorder.state !== "recording"
+      )
+        return false;
       try {
         recorder.pause();
-        elapsedMs = activeMs();
-        publish({
-          status: "paused",
-          durationSeconds: Math.floor(elapsedMs / 1000),
-          activeMilliseconds: elapsedMs,
-        });
-      } catch (error) {
-        fail(error);
+      } catch {
+        return false;
       }
+      elapsedMs = activeMs();
+      publish({
+        status: "paused",
+        durationSeconds: Math.floor(elapsedMs / 1000),
+        activeMilliseconds: elapsedMs,
+      });
+      return true;
     },
-    resume() {
-      if (!recorder || snapshot.status !== "paused") return;
+    /** True when the take resumed. */
+    resume(): boolean {
+      if (
+        !recorder ||
+        snapshot.status !== "paused" ||
+        recorder.state !== "paused"
+      )
+        return false;
       try {
         recorder.resume();
-        activeSince = Date.now();
-        publish({ status: "recording" });
-      } catch (error) {
-        fail(error);
+      } catch {
+        return false;
       }
+      activeSince = Date.now();
+      publish({ status: "recording" });
+      return true;
     },
     destroy() {
       if (destroyed) return;
