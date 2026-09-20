@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.2, 2026-09-21
+
+The snapshot reports `canPause` for the current take. `pause()` and `resume()` return whether they acted, skip a browser without pause support and skip a recorder the browser has already ended instead of failing the take.
+
 ## 0.2.1, 2026-09-21
 
 Recorder options gain `audioBitsPerSecond` and `onTake`. The snapshot carries exact `activeMilliseconds` next to floored seconds. `onTake` also receives the bytes of a recording that `reset()` or an unmount interrupted, so a host can keep the take durable without a second recorder. The active clock uses `Date.now()`.
