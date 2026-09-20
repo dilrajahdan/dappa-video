@@ -176,16 +176,19 @@ export function createRecorder(options: RecorderOptions = {}) {
       (snapshot.status === "recording" ? Date.now() - activeSince : 0)
     );
   }
-  /** The 200ms clock, aligned to the moment recording (re)starts so a host shows whole seconds on time. */
+  /**
+   * The 200ms clock, aligned to the moment recording (re)starts so a host shows whole seconds on
+   * time. It publishes only when the whole second changes (one render a second, not five); pause
+   * and stop still record the exact active milliseconds.
+   */
   function armTimer() {
     clearInterval(timer);
     timer = setInterval(() => {
       if (snapshot.status !== "recording") return;
       const elapsed = activeMs();
-      publish({
-        durationSeconds: Math.floor(elapsed / 1000),
-        activeMilliseconds: elapsed,
-      });
+      const seconds = Math.floor(elapsed / 1000);
+      if (seconds !== snapshot.durationSeconds)
+        publish({ durationSeconds: seconds, activeMilliseconds: elapsed });
       if (
         options.maxDurationSeconds !== undefined &&
         elapsed >= options.maxDurationSeconds * 1000

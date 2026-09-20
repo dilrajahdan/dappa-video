@@ -1,6 +1,6 @@
 {
   "name": "@dappa/video",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Browser video primitives: countdown, thumbnails and optional camera effects",
   "license": "MIT",
   "author": "Dil Ahdan",

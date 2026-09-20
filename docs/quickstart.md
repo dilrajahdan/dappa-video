@@ -12,7 +12,7 @@ Start -> 3 -> 2 -> 1 -> GO
 1. **Terminal, beside your app's `package.json`:**
 
    ```sh
-   bun add https://github.com/dilrajahdan/dappa-video/releases/download/v0.2.3/dappa-video-0.2.3.tgz
+   bun add https://github.com/dilrajahdan/dappa-video/releases/download/v0.2.4/dappa-video-0.2.4.tgz
    ```
 
 2. **Your client module:** paste this function and call `tryCountdown()` from an existing button's click handler.
