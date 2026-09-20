@@ -182,3 +182,97 @@ describe("recording lifecycle", () => {
     supported.mockRestore();
   });
 });
+
+describe("host contracts", () => {
+  it("passes an explicit audio bitrate and leaves it out when unset", async () => {
+    const options: MediaRecorderOptions[] = [];
+    class Spy extends FakeMediaRecorder {
+      constructor(stream: MediaStream, opts: MediaRecorderOptions) {
+        super(stream, opts);
+        options.push(opts);
+      }
+    }
+    vi.stubGlobal("MediaRecorder", Spy);
+    const explicit = createRecorder({
+      countdownSeconds: 0,
+      videoBitsPerSecond: 1_200_000,
+      audioBitsPerSecond: 96_000,
+    });
+    await explicit.start(async () => fakeStream().stream);
+    explicit.destroy();
+    const silent = createRecorder({ countdownSeconds: 0 });
+    await silent.start(async () => fakeStream().stream);
+    silent.destroy();
+    expect(options[0]).toMatchObject({
+      videoBitsPerSecond: 1_200_000,
+      audioBitsPerSecond: 96_000,
+    });
+    expect(options[1]).not.toHaveProperty("audioBitsPerSecond");
+  });
+  it("reports exact active milliseconds alongside floored seconds", async () => {
+    const r = createRecorder({ countdownSeconds: 0 });
+    await r.start(async () => fakeStream().stream);
+    await vi.advanceTimersByTimeAsync(1600);
+    r.pause();
+    expect(r.getSnapshot()).toMatchObject({
+      durationSeconds: 1,
+      activeMilliseconds: 1600,
+    });
+    await vi.advanceTimersByTimeAsync(9000);
+    r.resume();
+    await vi.advanceTimersByTimeAsync(1000);
+    r.stop();
+    expect(r.getSnapshot()).toMatchObject({
+      status: "ready",
+      durationSeconds: 2,
+      activeMilliseconds: 2600,
+    });
+    r.destroy();
+  });
+  it("delivers a finished take to onTake after a normal stop", async () => {
+    const onTake = vi.fn();
+    const r = createRecorder({ countdownSeconds: 0, onTake });
+    await r.start(async () => fakeStream().stream);
+    await vi.advanceTimersByTimeAsync(2000);
+    r.stop();
+    expect(onTake).toHaveBeenCalledOnce();
+    expect(onTake.mock.calls[0]?.[0]).toMatchObject({
+      mimeType: "video/webm;codecs=vp9,opus",
+      durationSeconds: 2,
+      activeMilliseconds: 2000,
+    });
+    expect(onTake.mock.calls[0]?.[0].blob.size).toBeGreaterThan(0);
+    r.destroy();
+  });
+  it("still delivers the bytes when reset interrupts an active recording", async () => {
+    const onTake = vi.fn();
+    const r = createRecorder({ countdownSeconds: 0, onTake });
+    const { stream, track } = fakeStream();
+    await r.start(async () => stream);
+    await vi.advanceTimersByTimeAsync(3400);
+    r.pause();
+    await vi.advanceTimersByTimeAsync(5000);
+    r.reset();
+    // The snapshot never shows an interrupted take; the host stashes it from onTake.
+    expect(r.getSnapshot()).toMatchObject({ status: "idle", blob: null });
+    expect(track.stop).toHaveBeenCalledOnce();
+    expect(onTake).toHaveBeenCalledOnce();
+    expect(onTake.mock.calls[0]?.[0]).toMatchObject({
+      durationSeconds: 3,
+      activeMilliseconds: 3400,
+    });
+    expect(FakeMediaRecorder.instances[0]?.state).toBe("inactive");
+  });
+  it("does not deliver a take for a cancelled countdown or a recorder error", async () => {
+    const onTake = vi.fn();
+    const r = createRecorder({ onTake });
+    await r.start(async () => fakeStream().stream);
+    r.stop();
+    const second = createRecorder({ countdownSeconds: 0, onTake });
+    await second.start(async () => fakeStream().stream);
+    FakeMediaRecorder.instances[1]?.onerror?.();
+    expect(onTake).not.toHaveBeenCalled();
+    r.destroy();
+    second.destroy();
+  });
+});

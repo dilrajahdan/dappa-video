@@ -39,7 +39,8 @@ try {
       "utf8",
     ),
   );
-  assert.equal(installed.version, "0.2.0");
+  const expected = JSON.parse(await readFile("package.json", "utf8")).version;
+  assert.equal(installed.version, expected);
   assert.equal(Object.keys(installed.dependencies ?? {}).length, 0);
   for (const entry of Object.values(installed.exports)) {
     await readFile(join(consumer, "node_modules/@dappa/video", entry.types));

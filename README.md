@@ -16,7 +16,7 @@ ActionMode       CargoMode       SGSS
 
 Small, framework-independent building blocks for browser video. No core runtime dependencies. The optional Vue and React wrappers use your app’s framework. No server, account or API key required for these primitives.
 
-> **Early release, v0.2.0:** recording sessions now have Vue and React wrappers. Bring your own UI and upload code; this is not a hosted recorder or video editor.
+> **Early release, v0.2.1:** recording sessions now have Vue and React wrappers. Bring your own UI and upload code; this is not a hosted recorder or video editor.
 
 ## Pick your next step
 
@@ -51,7 +51,7 @@ Small, framework-independent building blocks for browser video. No core runtime 
 1. **In your app's terminal**, beside its `package.json`, run:
 
    ```sh
-   bun add https://github.com/dilrajahdan/dappa-video/releases/download/v0.2.0/dappa-video-0.2.0.tgz
+   bun add https://github.com/dilrajahdan/dappa-video/releases/download/v0.2.1/dappa-video-0.2.1.tgz
    ```
 
 2. **In your browser code**, import the part you need:

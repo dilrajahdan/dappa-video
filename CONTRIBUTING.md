@@ -19,8 +19,8 @@ Clone for development. Install a release for app use.
 
    ```sh
    bun run check
-   bun pm pack --filename dappa-video-0.2.0.tgz
-   bun run test:consumer ./dappa-video-0.2.0.tgz
+   bun pm pack --filename dappa-video-0.2.1.tgz
+   bun run test:consumer ./dappa-video-0.2.1.tgz
    ```
 
 4. **Check in order:** terminal reports lint/typecheck/test/build success; consumer output reports countdown, real recording, thumbnail and worker checks; no browser page errors. The consumer installs into a temporary project outside this repo. Chrome uses synthetic camera/microphone input, not your real devices. This does not verify physical hardware, Safari, screen capture or background segmentation.

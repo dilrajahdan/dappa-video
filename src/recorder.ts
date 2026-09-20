@@ -14,22 +14,40 @@ export type RecorderSnapshot = Readonly<{
   status: RecorderStatus;
   countdown: number;
   durationSeconds: number;
+  /** Exact active recording time so hosts can round their own way. */
+  activeMilliseconds: number;
   blob: Blob | null;
   previewUrl: string | null;
   mimeType: string | null;
   error: string | null;
+}>;
+/** A finished take with bytes. Delivered through onTake even when reset or destroy ended it. */
+export type FinishedTake = Readonly<{
+  blob: Blob;
+  mimeType: string;
+  durationSeconds: number;
+  activeMilliseconds: number;
 }>;
 export type RecorderOptions = {
   countdownSeconds?: number;
   audioCues?: boolean;
   maxDurationSeconds?: number;
   videoBitsPerSecond?: number;
+  /** Omitted leaves the browser default. */
+  audioBitsPerSecond?: number;
   mimeTypes?: readonly string[];
+  /**
+   * Called once per finished take with bytes: after a normal stop, and also when reset() or
+   * destroy() (for example a component unmount) interrupts an active recording. Hosts that
+   * keep takes durable should stash here; the snapshot never shows an interrupted take.
+   */
+  onTake?: (take: FinishedTake) => void;
 };
 export const INITIAL_RECORDER_SNAPSHOT: RecorderSnapshot = Object.freeze({
   status: "idle",
   countdown: 0,
   durationSeconds: 0,
+  activeMilliseconds: 0,
   blob: null,
   previewUrl: null,
   mimeType: null,
@@ -68,6 +86,7 @@ export function createRecorder(options: RecorderOptions = {}) {
   let timer: ReturnType<typeof setInterval> | undefined;
   let activeSince = 0;
   let elapsedMs = 0;
+  let chunks: Blob[] = [];
 
   function publish(patch: Partial<RecorderSnapshot>) {
     snapshot = Object.freeze({ ...snapshot, ...patch });
@@ -79,24 +98,58 @@ export function createRecorder(options: RecorderOptions = {}) {
       track.stop();
     }
   }
-  function cleanup() {
+  function deliver(blob: Blob, mimeType: string, ms: number) {
+    if (!blob.size) return;
+    options.onTake?.(
+      Object.freeze({
+        blob,
+        mimeType,
+        durationSeconds: Math.floor(ms / 1000),
+        activeMilliseconds: ms,
+      }),
+    );
+  }
+  /**
+   * Release everything. With `deliverTake`, an active recording is stopped gracefully and its
+   * bytes go to onTake once the browser flushes them, so an unmount does not lose the take.
+   */
+  function cleanup(deliverTake = false) {
     cancelCountdown?.();
     cancelCountdown = undefined;
     clearInterval(timer);
     timer = undefined;
     if (recorder) {
-      recorder.ondataavailable = null;
-      recorder.onstop = null;
-      recorder.onerror = null;
-      if (recorder.state !== "inactive") {
+      const instance = recorder;
+      const active =
+        snapshot.status === "recording" || snapshot.status === "paused";
+      const finalMs = active ? activeMs() : elapsedMs;
+      const late = deliverTake && active && instance.state !== "inactive";
+      const held = chunks;
+      const mimeType = instance.mimeType;
+      recorder = null;
+      instance.onerror = null;
+      if (late) {
+        instance.ondataavailable = (event) => {
+          if (event.data.size > 0) held.push(event.data);
+        };
+        instance.onstop = () => {
+          instance.ondataavailable = null;
+          instance.onstop = null;
+          deliver(new Blob(held, { type: mimeType }), mimeType, finalMs);
+        };
+      } else {
+        instance.ondataavailable = null;
+        instance.onstop = null;
+      }
+      if (instance.state !== "inactive") {
         try {
-          recorder.stop();
+          instance.stop();
         } catch {
           /* Already stopped. */
         }
       }
-      recorder = null;
     }
+    chunks = [];
     if (stream) {
       stopTracks(stream);
       stream = null;
@@ -117,7 +170,7 @@ export function createRecorder(options: RecorderOptions = {}) {
   function activeMs() {
     return (
       elapsedMs +
-      (snapshot.status === "recording" ? performance.now() - activeSince : 0)
+      (snapshot.status === "recording" ? Date.now() - activeSince : 0)
     );
   }
   function stop() {
@@ -140,6 +193,7 @@ export function createRecorder(options: RecorderOptions = {}) {
       publish({
         status: "stopping",
         durationSeconds: Math.floor(elapsedMs / 1000),
+        activeMilliseconds: elapsedMs,
       });
       try {
         recorder.stop();
@@ -181,11 +235,16 @@ export function createRecorder(options: RecorderOptions = {}) {
       const instance = new MediaRecorder(source, {
         mimeType,
         videoBitsPerSecond: options.videoBitsPerSecond ?? 2_500_000,
+        ...(options.audioBitsPerSecond !== undefined
+          ? { audioBitsPerSecond: options.audioBitsPerSecond }
+          : {}),
       });
       recorder = instance;
-      const chunks: Blob[] = [];
+      const takeChunks: Blob[] = [];
+      chunks = takeChunks;
       instance.ondataavailable = (event) => {
-        if (mine === generation && event.data.size > 0) chunks.push(event.data);
+        if (mine === generation && event.data.size > 0)
+          takeChunks.push(event.data);
       };
       instance.onerror = () => {
         if (mine === generation)
@@ -196,18 +255,22 @@ export function createRecorder(options: RecorderOptions = {}) {
       instance.onstop = () => {
         if (destroyed || mine !== generation) return;
         if (snapshot.status === "recording") elapsedMs = activeMs();
-        const blob = new Blob(chunks, { type: instance.mimeType || mimeType });
+        const blob = new Blob(takeChunks, {
+          type: instance.mimeType || mimeType,
+        });
         cleanup();
         if (!blob.size) {
           fail(new Error("No video was captured. Please record again."));
           return;
         }
+        deliver(blob, blob.type, elapsedMs);
         publish({
           status: "ready",
           blob,
           previewUrl: URL.createObjectURL(blob),
           mimeType: blob.type,
           durationSeconds: Math.floor(elapsedMs / 1000),
+          activeMilliseconds: elapsedMs,
           countdown: 0,
           error: null,
         });
@@ -225,7 +288,7 @@ export function createRecorder(options: RecorderOptions = {}) {
           try {
             instance.start(1000);
             if (snapshot.previewUrl) URL.revokeObjectURL(snapshot.previewUrl);
-            activeSince = performance.now();
+            activeSince = Date.now();
             elapsedMs = 0;
             publish({
               status: "recording",
@@ -233,13 +296,17 @@ export function createRecorder(options: RecorderOptions = {}) {
               previewUrl: null,
               mimeType: null,
               durationSeconds: 0,
+              activeMilliseconds: 0,
               countdown: 0,
             });
             if (options.audioCues) beepGo();
             timer = setInterval(() => {
               if (snapshot.status !== "recording") return;
               const elapsed = activeMs();
-              publish({ durationSeconds: Math.floor(elapsed / 1000) });
+              publish({
+                durationSeconds: Math.floor(elapsed / 1000),
+                activeMilliseconds: elapsed,
+              });
               if (
                 options.maxDurationSeconds !== undefined &&
                 elapsed >= options.maxDurationSeconds * 1000
@@ -259,7 +326,7 @@ export function createRecorder(options: RecorderOptions = {}) {
   }
   function reset() {
     generation++;
-    cleanup();
+    cleanup(true);
     if (snapshot.previewUrl) URL.revokeObjectURL(snapshot.previewUrl);
     elapsedMs = 0;
     publish(INITIAL_RECORDER_SNAPSHOT);
@@ -283,6 +350,7 @@ export function createRecorder(options: RecorderOptions = {}) {
         publish({
           status: "paused",
           durationSeconds: Math.floor(elapsedMs / 1000),
+          activeMilliseconds: elapsedMs,
         });
       } catch (error) {
         fail(error);
@@ -292,7 +360,7 @@ export function createRecorder(options: RecorderOptions = {}) {
       if (!recorder || snapshot.status !== "paused") return;
       try {
         recorder.resume();
-        activeSince = performance.now();
+        activeSince = Date.now();
         publish({ status: "recording" });
       } catch (error) {
         fail(error);
