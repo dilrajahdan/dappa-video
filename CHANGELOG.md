@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+New `@dappa/video/preview-gif`: a looping, poster-first GIF of the first seconds of a video for email, with a zero-dependency GIF89a encoder, a byte budget that steps down and typed failures.
+
 ## 0.2.4, 2026-09-21
 
 While recording, the snapshot updates once per whole second instead of on every 200ms tick, so a host renders once a second. Pause and stop still carry exact active milliseconds.

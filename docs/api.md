@@ -31,6 +31,25 @@ Prime during a user gesture. Unavailable or blocked Web Audio falls back silentl
 
 Source must be a drawable, decoded image/video/canvas. Size is fitted inside the bounds without enlarging. `thumbnailDimensions(width, height, maxWidth?, maxHeight?)` computes the dimensions without encoding. Check the returned Blob's actual MIME type if a browser falls back from the requested encoder.
 
+## Animated email previews
+
+`createPreviewGif(source, options?)` returns `Promise<PreviewGifResult>`. `source` is a decoded `HTMLVideoElement` or a `FrameSource` (`{ width, height, duration?, frameAt(seconds) }`).
+
+| Option | Default |
+|---|---|
+| `durationSeconds` / `fps` | 2.5 / 10 |
+| `maxWidth` | 480, never enlarged |
+| `maxBytes` | 800,000 |
+| `maxColors` / `dither` | 256 / `"none"`, or `"ordered"` |
+| `drawOverlay(ctx, width, height)` / `overlayOn` | None / `"all"`, or `"first"` |
+| `firstFrame` | `"poster"`, `"none"` or your own image |
+| `posterSeconds` / `firstFrameSeconds` | 1 s (or half a shorter video) / 0.6 s |
+| `holdLastSeconds` / `timeoutMs` | 0 / 20,000 |
+
+Success: `{ ok: true, blob, width, height, frames, bytes, steps }`. Failure: `{ ok: false, reason, message }` with `reason` one of `unsupported`, `undecodable`, `timeout`, `over-budget`, `error`. Steps fire in order: `fewer-frames`, `smaller-width:<px>`, `fewer-colours:<n>`.
+
+The encoder is pure and also exported: `encodeGif(frames, options)`, `encodeWithinBudget(frames, options)`, `quantize`, `lzwEncode`, `resizeRgba`, `previewDimensions`. Frames are `{ pixels: RGBA, delayCs, hold? }`.
+
 ## Drawing clock
 
 `createTicker(onTick, { backpressure?: boolean }?)` returns `start`, `stop`, `destroy`.

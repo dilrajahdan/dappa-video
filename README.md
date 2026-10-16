@@ -37,6 +37,7 @@ Small, framework-independent building blocks for browser video. No core runtime 
 | Countdown beeps and a start cue | Included, browser audio permission applies |
 | Smaller JPEG or WebP thumbnails | Included, keeps aspect ratio |
 | Optional overlay, such as an email play button | Included as a drawing callback |
+| Animated GIF email preview, poster first | Included, no dependencies |
 | Worker clock with bounded queued ticks | Included; drawing still runs on the host thread |
 | Background-effect plugin interface | Included; the background model is not bundled |
 | One-at-a-time asynchronous effect scheduling | Included; connect your own worker |
@@ -59,11 +60,40 @@ Small, framework-independent building blocks for browser video. No core runtime 
    ```ts
    import { startCountdown } from "@dappa/video/countdown";
    import { createThumbnail } from "@dappa/video/thumbnail";
+   import { createPreviewGif } from "@dappa/video/preview-gif";
    ```
 
 3. **Check in order:** your app's `package.json` contains `@dappa/video`; its build resolves the imports; the [quickstart browser check](docs/quickstart.md#check-it-in-the-browser) shows 3, 2, 1, then GO.
 
 The release contains built JavaScript and TypeScript declarations. No package build runs inside your app. This package is distributed through GitHub Releases, not npm yet. [Bun supports URL-based packages](https://bun.sh/docs/pm/cli/install#non-npm-dependencies).
+
+## Animated email previews
+
+Email clients cannot play video. A looping GIF of the first 2.5 seconds can, and it sits where the still poster was.
+
+```text
+ frame 1 (0.6 s)        frames 2 to 26 (10 fps)       loop
++---------------+      +---------------+
+|   poster  >   | ---> |  moving   >   | ---> back to frame 1
++---------------+      +---------------+
+```
+
+0. **Prerequisites:** the package installed (see above) and a decoded `<video>` in the browser.
+1. **In your browser code**, after the recording is decoded:
+
+   ```ts
+   import { createPreviewGif } from "@dappa/video/preview-gif";
+
+   const gif = await createPreviewGif(video, { drawOverlay: drawPlayButton });
+   if (gif.ok) await upload("preview.gif", gif.blob);
+   else console.warn("Keeping poster.jpg:", gif.reason);
+   ```
+
+2. **Check in order:** `gif.ok` is `true`; `gif.bytes` is under 800,000; `gif.steps` lists any size cuts (empty means none were needed); the GIF moves when opened in a browser.
+
+Defaults: 480 px wide (never enlarged), 10 fps, 256 colours, no dithering so faces stay clean, 800 KB budget. Over budget, it drops frames, then width, then colours, and reports each step. It never throws. A failure returns `{ ok: false, reason }` and you keep the still poster.
+
+**Honest note:** Outlook desktop shows frame 1 only. That is why frame 1 is the poster with your play button. Pass `firstFrame` your existing poster image to make them identical. Encoding runs on the page's main thread, about 0.7 s for the default size in Chrome.
 
 ## Do we put it on the BBL apps droplet?
 
