@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-New `@dappa/video/preview-gif`: a looping, poster-first GIF of the first seconds of a video for email, with a zero-dependency GIF89a encoder, a byte budget that steps down and typed failures.
+New `@dappa/video/preview-gif`: a looping, poster-first GIF of the first seconds of a video for email, with a zero-dependency GIF89a encoder, a byte budget that steps down and typed failures. Screen + camera takes can enlarge the camera card (`focus`), and the stored poster can be frame 1 as-is.
 
 ## 0.2.4, 2026-09-21
 

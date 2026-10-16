@@ -42,13 +42,14 @@ Source must be a drawable, decoded image/video/canvas. Size is fitted inside the
 | `maxBytes` | 800,000 |
 | `maxColors` / `dither` | 256 / `"none"`, or `"ordered"` |
 | `drawOverlay(ctx, width, height)` / `overlayOn` | None / `"all"`, or `"first"` |
-| `firstFrame` | `"poster"`, `"none"` or your own image |
+| `firstFrame` | `"poster"`, `"none"`, or your stored poster as a Blob or image (drawn as-is) |
+| `focus` | None. `{ rect, radius?, pad?, size?, corner?, margin?, easeSeconds?, shadow? }`: defaults pad 2 px, size 0.4 of width, `"br"`, margin 0.04, ease 0.4 s, shadow on |
 | `posterSeconds` / `firstFrameSeconds` | 1 s (or half a shorter video) / 0.6 s |
 | `holdLastSeconds` / `timeoutMs` | 0 / 20,000 |
 
-Success: `{ ok: true, blob, width, height, frames, bytes, steps }`. Failure: `{ ok: false, reason, message }` with `reason` one of `unsupported`, `undecodable`, `timeout`, `over-budget`, `error`. Steps fire in order: `fewer-frames`, `smaller-width:<px>`, `fewer-colours:<n>`.
+Success: `{ ok: true, blob, width, height, frames, bytes, steps, focused }`. A `focus.rect` that misses the video is ignored and `focused` is `false`. Failure: `{ ok: false, reason, message }` with `reason` one of `unsupported`, `undecodable`, `timeout`, `over-budget`, `error`. Steps fire in order: `fewer-frames`, `smaller-width:<px>`, `fewer-colours:<n>`.
 
-The encoder is pure and also exported: `encodeGif(frames, options)`, `encodeWithinBudget(frames, options)`, `quantize`, `lzwEncode`, `resizeRgba`, `previewDimensions`. Frames are `{ pixels: RGBA, delayCs, hold? }`.
+The encoder is pure and also exported: `encodeGif(frames, options)`, `encodeWithinBudget(frames, options)`, `quantize`, `lzwEncode`, `resizeRgba`, `previewDimensions`, and the focus maths `focusLayout(video, output, focus, progress)` and `focusProgress(seconds, easeSeconds)`. Frames are `{ pixels: RGBA, delayCs, hold? }`.
 
 ## Drawing clock
 

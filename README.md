@@ -78,22 +78,28 @@ Email clients cannot play video. A looping GIF of the first 2.5 seconds can, and
 +---------------+      +---------------+
 ```
 
-0. **Prerequisites:** the package installed (see above) and a decoded `<video>` in the browser.
+0. **Prerequisites:** the package installed (see above), a decoded `<video>` in the browser, and the poster image you already email.
 1. **In your browser code**, after the recording is decoded:
 
    ```ts
    import { createPreviewGif } from "@dappa/video/preview-gif";
 
-   const gif = await createPreviewGif(video, { drawOverlay: drawPlayButton });
+   const gif = await createPreviewGif(video, {
+     firstFrame: posterBlob, // the poster.jpg you already send
+     drawOverlay: drawPlayButton,
+     focus: cameraCard && { rect: cameraCard, radius: 13 }, // screen + camera takes only
+   });
    if (gif.ok) await upload("preview.gif", gif.blob);
    else console.warn("Keeping poster.jpg:", gif.reason);
    ```
 
-2. **Check in order:** `gif.ok` is `true`; `gif.bytes` is under 800,000; `gif.steps` lists any size cuts (empty means none were needed); the GIF moves when opened in a browser.
+2. **Check in order:** `gif.ok` is `true`; `gif.bytes` is under 800,000; `gif.steps` lists any size cuts (empty means none were needed); `gif.focused` is `true` when you passed a camera card; the GIF moves when opened in a browser.
+
+**Screen + camera takes.** A small camera card in a corner is only a few percent of the picture, so the GIF reads as a still. Pass the card's rectangle in video pixels as `focus.rect`. After the poster, the card grows over 0.4 s to 40% of the width, bottom-right, with its rounded corners and a soft shadow, and stays above the play-button wash so the face stays bright. Without `focus`, nothing changes.
 
 Defaults: 480 px wide (never enlarged), 10 fps, 256 colours, no dithering so faces stay clean, 800 KB budget. Over budget, it drops frames, then width, then colours, and reports each step. It never throws. A failure returns `{ ok: false, reason }` and you keep the still poster.
 
-**Honest note:** Outlook desktop shows frame 1 only. That is why frame 1 is the poster with your play button. Pass `firstFrame` your existing poster image to make them identical. Encoding runs on the page's main thread, about 0.7 s for the default size in Chrome.
+**Honest note:** Outlook desktop shows frame 1 only. Pass the poster you already produced as `firstFrame` (a Blob or a decoded image). It is drawn as-is, with no second overlay and no focus, so Outlook shows the same picture as before. It is reduced to a 256-colour GIF frame, so it matches closely, not byte for byte. Encoding runs on the page's main thread, about 0.8 s for the default size in Chrome.
 
 ## Do we put it on the BBL apps droplet?
 

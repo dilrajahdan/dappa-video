@@ -3,6 +3,8 @@ import {
   createPreviewGif,
   encodeGif,
   encodeWithinBudget,
+  focusLayout,
+  focusProgress,
   type GifFrame,
   lzwEncode,
   previewDimensions,
@@ -289,13 +291,18 @@ describe("createPreviewGif in the browser", () => {
     const drawn: unknown[] = [];
     let width = 0;
     let height = 0;
-    const ctx = {
-      drawImage: vi.fn((source: unknown, _x, _y, w: number, h: number) => {
-        drawn.push(source);
-        width = w;
-        height = h;
+    const calls: Array<[string, unknown[]]> = [];
+    const base = {
+      drawImage: vi.fn((source: unknown, ...args: number[]) => {
+        calls.push(["drawImage", [source, ...args]]);
+        if (args.length === 4) {
+          drawn.push(source);
+          width = args[2];
+          height = args[3];
+        }
       }),
       getImageData: vi.fn(() => {
+        calls.push(["getImageData", []]);
         const data = new Uint8ClampedArray(width * height * 4);
         const shade = (drawn.length * 20) % 255;
         for (let i = 0; i < data.length; i += 4) {
@@ -306,9 +313,21 @@ describe("createPreviewGif in the browser", () => {
         }
         return { data, width, height };
       }),
-    } as unknown as CanvasRenderingContext2D;
+    };
+    const ctx = new Proxy(base as Record<string | symbol, unknown>, {
+      get(target, key) {
+        if (!(key in target) && typeof key === "string") {
+          target[key] = vi.fn((...args: unknown[]) => calls.push([key, args]));
+        }
+        return target[key];
+      },
+      set(target, key, value) {
+        target[key] = value;
+        return true;
+      },
+    }) as unknown as CanvasRenderingContext2D;
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(ctx);
-    return { ctx, drawn };
+    return { ctx, drawn, calls };
   }
 
   it("puts the poster first, held, then the motion frames, with the overlay on each", async () => {
@@ -364,6 +383,117 @@ describe("createPreviewGif in the browser", () => {
     ]);
   });
 
+  it("draws a supplied poster as-is, without the overlay or focus, then the motion frames", async () => {
+    const { calls } = fakeCanvas();
+    const poster = document.createElement("canvas");
+    const overlay = vi.fn();
+    const result = await createPreviewGif(
+      {
+        width: 1280,
+        height: 720,
+        frameAt: async () => document.createElement("canvas"),
+      },
+      {
+        durationSeconds: 0.5,
+        fps: 4,
+        firstFrame: poster,
+        drawOverlay: overlay,
+        focus: { rect: { x: 1035, y: 538, w: 216, h: 153 } },
+      },
+    );
+    if (!result.ok) throw new Error(result.message);
+    expect(overlay).toHaveBeenCalledTimes(2);
+    const firstRead = calls.findIndex(([name]) => name === "getImageData");
+    const beforePoster = calls.slice(0, firstRead);
+    expect(beforePoster.filter(([n]) => n === "drawImage")).toHaveLength(1);
+    expect(beforePoster.some(([n]) => n === "clip")).toBe(false);
+    expect(result.focused).toBe(true);
+  });
+
+  it("accepts the stored poster as a Blob", async () => {
+    const { drawn } = fakeCanvas();
+    const bitmap = { close: vi.fn() };
+    const decode = vi.fn(async () => bitmap);
+    vi.stubGlobal("createImageBitmap", decode);
+    const poster = new Blob(["jpeg"], { type: "image/jpeg" });
+    const result = await createPreviewGif(
+      {
+        width: 640,
+        height: 360,
+        frameAt: async () => document.createElement("canvas"),
+      },
+      { durationSeconds: 0.5, fps: 4, firstFrame: poster },
+    );
+    vi.unstubAllGlobals();
+    expect(result.ok).toBe(true);
+    expect(decode).toHaveBeenCalledWith(poster);
+    expect(drawn[0]).toBe(bitmap);
+    expect(bitmap.close).toHaveBeenCalled();
+  });
+
+  it("returns a typed error when a poster Blob cannot be decoded", async () => {
+    fakeCanvas();
+    vi.stubGlobal("createImageBitmap", async () => {
+      throw new Error("bad jpeg");
+    });
+    const result = await createPreviewGif(
+      {
+        width: 640,
+        height: 360,
+        frameAt: async () => document.createElement("canvas"),
+      },
+      { firstFrame: new Blob(["x"]) },
+    );
+    vi.unstubAllGlobals();
+    expect(result).toMatchObject({ ok: false, reason: "undecodable" });
+  });
+
+  it("draws the enlarged camera card on motion frames and still meets the budget", async () => {
+    const { calls } = fakeCanvas();
+    const result = await createPreviewGif(
+      {
+        width: 1280,
+        height: 720,
+        frameAt: async () => document.createElement("canvas"),
+      },
+      {
+        durationSeconds: 1,
+        fps: 10,
+        focus: { rect: { x: 1035, y: 538, w: 216, h: 153 } },
+        maxBytes: 2_000,
+      },
+    );
+    const cards = calls.filter(([n, a]) => n === "drawImage" && a.length === 9);
+    // Poster frame has no card; each of the 10 motion frames has one.
+    expect(cards).toHaveLength(10);
+    const last = cards[cards.length - 1][1] as number[];
+    expect(last.slice(1, 5)).toEqual([1033, 536, 220, 157]);
+    expect(Math.round(last[7])).toBe(192);
+    if (!result.ok) throw new Error(result.message);
+    expect(result.bytes).toBeLessThanOrEqual(2_000);
+    expect(result.steps[0]).toBe("fewer-frames");
+  });
+
+  it("ignores a focus rectangle outside the video, like a camera-only take", async () => {
+    const { calls } = fakeCanvas();
+    const result = await createPreviewGif(
+      {
+        width: 640,
+        height: 360,
+        frameAt: async () => document.createElement("canvas"),
+      },
+      {
+        durationSeconds: 0.5,
+        fps: 4,
+        focus: { rect: { x: 900, y: 900, w: 100, h: 100 } },
+      },
+    );
+    expect(result).toMatchObject({ ok: true, focused: false });
+    expect(calls.some(([n, a]) => n === "drawImage" && a.length === 9)).toBe(
+      false,
+    );
+  });
+
   it("can skip the poster frame entirely", async () => {
     fakeCanvas();
     const result = await createPreviewGif(
@@ -407,5 +537,90 @@ describe("createPreviewGif in the browser", () => {
       frameAt: async () => document.createElement("canvas"),
     });
     expect(result).toMatchObject({ ok: false, reason: "unsupported" });
+  });
+});
+
+describe("face focus layout", () => {
+  const source = { width: 1280, height: 720 };
+  const output = { width: 480, height: 270 };
+  const focus = { rect: { x: 1035, y: 538, w: 216, h: 153 }, radius: 13 };
+
+  it("starts exactly where the card sits in the video", () => {
+    const layout = focusLayout(source, output, focus, 0);
+    if (!layout) throw new Error("expected a layout");
+    // Source includes a 2px pad so the card border comes along.
+    expect(layout.source).toEqual({ x: 1033, y: 536, w: 220, h: 157 });
+    expect(layout.dest.x).toBeCloseTo(1033 * 0.375);
+    expect(layout.dest.y).toBeCloseTo(536 * 0.375);
+    expect(layout.dest.w).toBeCloseTo(220 * 0.375);
+    expect(layout.dest.h).toBeCloseTo(157 * 0.375);
+  });
+
+  it("ends at 40% of the output width, bottom-right with a margin, aspect kept", () => {
+    const layout = focusLayout(source, output, focus, 1);
+    if (!layout) throw new Error("expected a layout");
+    const margin = Math.round(270 * 0.04);
+    expect(layout.dest.w).toBeCloseTo(192);
+    expect(layout.dest.h).toBeCloseTo((192 * 157) / 220);
+    expect(layout.dest.x + layout.dest.w).toBeCloseTo(480 - margin);
+    expect(layout.dest.y + layout.dest.h).toBeCloseTo(270 - margin);
+    expect(layout.radius).toBeCloseTo(13 * (192 / 220));
+  });
+
+  it("honours size and corner", () => {
+    const layout = focusLayout(
+      source,
+      output,
+      { ...focus, size: 0.5, corner: "tl" },
+      1,
+    );
+    if (!layout) throw new Error("expected a layout");
+    const margin = Math.round(270 * 0.04);
+    expect(layout.dest).toMatchObject({ x: margin, y: margin });
+    expect(layout.dest.w).toBeCloseTo(240);
+  });
+
+  it("caps a tall card so it fits inside the frame", () => {
+    const layout = focusLayout(
+      { width: 1280, height: 720 },
+      { width: 480, height: 270 },
+      { rect: { x: 0, y: 0, w: 200, h: 600 }, size: 0.9 },
+      1,
+    );
+    if (!layout) throw new Error("expected a layout");
+    const margin = Math.round(270 * 0.04);
+    expect(layout.dest.h).toBeCloseTo(270 - 2 * margin);
+    expect(layout.dest.w / layout.dest.h).toBeCloseTo(200 / 600, 1);
+  });
+
+  it("clamps a rectangle to the video and refuses an empty one", () => {
+    const clamped = focusLayout(
+      source,
+      output,
+      { rect: { x: 1200, y: 600, w: 300, h: 300 } },
+      0,
+    );
+    expect(clamped?.source).toEqual({ x: 1198, y: 598, w: 82, h: 122 });
+    expect(
+      focusLayout(source, output, { rect: { x: 2000, y: 0, w: 10, h: 10 } }, 1),
+    ).toBeNull();
+    expect(
+      focusLayout(source, output, { rect: { x: 0, y: 0, w: 0, h: 10 } }, 1),
+    ).toBeNull();
+  });
+
+  it("eases from normal size to enlarged over the ease time", () => {
+    expect(focusProgress(0, 0.4)).toBe(0);
+    expect(focusProgress(0.4, 0.4)).toBe(1);
+    expect(focusProgress(2, 0.4)).toBe(1);
+    const mid = focusProgress(0.2, 0.4);
+    expect(mid).toBeGreaterThan(0.5);
+    expect(mid).toBeLessThan(1);
+    expect(focusProgress(0, 0)).toBe(1);
+    const a = focusLayout(source, output, focus, 0.5);
+    const lo = focusLayout(source, output, focus, 0);
+    const hi = focusLayout(source, output, focus, 1);
+    if (!a || !lo || !hi) throw new Error("expected layouts");
+    expect(a.dest.w).toBeCloseTo((lo.dest.w + hi.dest.w) / 2);
   });
 });
