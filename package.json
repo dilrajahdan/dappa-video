@@ -1,7 +1,7 @@
 {
   "name": "@dappa/video",
-  "version": "0.2.4",
-  "description": "Browser video primitives: countdown, thumbnails and optional camera effects",
+  "version": "0.2.5",
+  "description": "Browser video primitives: countdown, thumbnails, animated email previews and optional camera effects",
   "license": "MIT",
   "author": "Dil Ahdan",
   "repository": {
@@ -32,6 +32,10 @@
     "./thumbnail": {
       "types": "./dist/thumbnail.d.ts",
       "import": "./dist/thumbnail.js"
+    },
+    "./preview-gif": {
+      "types": "./dist/preview-gif.d.ts",
+      "import": "./dist/preview-gif.js"
     },
     "./processing": {
       "types": "./dist/processing.d.ts",
@@ -89,7 +93,8 @@
     "recording",
     "thumbnail",
     "countdown",
-    "browser"
+    "browser",
+    "gif"
   ],
   "peerDependencies": {
     "react": ">=18 <20",

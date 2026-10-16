@@ -54,7 +54,8 @@ try {
     import {createTicker} from '@dappa/video/ticker';
     import {createFrameProcessor} from '@dappa/video/effects';
     import {primeBeeper, beepTick, beepGo} from '@dappa/video/beeper';
-    window.videoLibrary = {startCountdown,createThumbnail,createTicker,createFrameProcessor,primeBeeper,beepTick,beepGo};
+    import {createPreviewGif} from '@dappa/video/preview-gif';
+    window.videoLibrary = {startCountdown,createThumbnail,createTicker,createFrameProcessor,primeBeeper,beepTick,beepGo,createPreviewGif};
   `,
   );
   const entryPath = join(consumer, "entry.js");
@@ -109,7 +110,7 @@ try {
   await page.goto(`http://127.0.0.1:${server.port}`);
   await page.waitForFunction(() => window.videoLibrary);
   const result = await page.evaluate(async () => {
-    const { startCountdown, createThumbnail, createTicker } =
+    const { startCountdown, createThumbnail, createTicker, createPreviewGif } =
       window.videoLibrary;
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { width: 1280, height: 720 },
@@ -179,6 +180,16 @@ try {
         image.src = imageUrl;
         await image.decode();
         URL.revokeObjectURL(imageUrl);
+        const gifResult = await createPreviewGif(video, { durationSeconds: 1 });
+        if (!gifResult.ok) throw new Error(`GIF failed: ${gifResult.reason}`);
+        const gifBitmap = await createImageBitmap(gifResult.blob);
+        const gif = {
+          type: gifResult.blob.type,
+          bytes: gifResult.bytes,
+          frames: gifResult.frames,
+          width: gifBitmap.width,
+        };
+        gifBitmap.close();
         let ticks = 0;
         const ticker = createTicker(() => ticks++);
         ticker.start();
@@ -203,6 +214,7 @@ try {
           paused,
           videoBytes: blob.size,
           thumbnail,
+          gif,
           ticks,
           stopped,
           cancelTicks,
@@ -224,6 +236,9 @@ try {
   assert.equal(result.thumbnail.type, "image/jpeg");
   assert.ok(result.thumbnail.width <= 1200 && result.thumbnail.height <= 1200);
   assert.ok(result.thumbnail.bytes > 0);
+  assert.equal(result.gif.type, "image/gif");
+  assert.ok(result.gif.bytes > 0 && result.gif.frames === 11);
+  assert.ok(result.gif.width > 0 && result.gif.width <= 480);
   assert.ok(result.ticks > 0);
   assert.equal(result.ticks, result.stopped);
   assert.deepEqual(result.cancelTicks, [1]);
