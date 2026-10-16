@@ -16,7 +16,7 @@ ActionMode       CargoMode       SGSS
 
 Small, framework-independent building blocks for browser video. No core runtime dependencies. The optional Vue and React wrappers use your app’s framework. No server, account or API key required for these primitives.
 
-> **Early release, v0.2.4:** recording sessions now have Vue and React wrappers. Bring your own UI and upload code; this is not a hosted recorder or video editor.
+> **Early release, v0.2.5:** animated GIF email previews, poster first, with an optional enlarged camera card. Bring your own UI and upload code; this is not a hosted recorder or video editor.
 
 ## Pick your next step
 
@@ -52,7 +52,7 @@ Small, framework-independent building blocks for browser video. No core runtime 
 1. **In your app's terminal**, beside its `package.json`, run:
 
    ```sh
-   bun add https://github.com/dilrajahdan/dappa-video/releases/download/v0.2.4/dappa-video-0.2.4.tgz
+   bun add https://github.com/dilrajahdan/dappa-video/releases/download/v0.2.5/dappa-video-0.2.5.tgz
    ```
 
 2. **In your browser code**, import the part you need:
@@ -95,7 +95,7 @@ Email clients cannot play video. A looping GIF of the first 2.5 seconds can, and
 
 2. **Check in order:** `gif.ok` is `true`; `gif.bytes` is under 800,000; `gif.steps` lists any size cuts (empty means none were needed); `gif.focused` is `true` when you passed a camera card; the GIF moves when opened in a browser.
 
-**Screen + camera takes.** A small camera card in a corner is only a few percent of the picture, so the GIF reads as a still. Pass the card's rectangle in video pixels as `focus.rect`. After the poster, the card grows over 0.4 s to 40% of the width, bottom-right, with its rounded corners and a soft shadow, and stays above the play-button wash so the face stays bright. Without `focus`, nothing changes.
+**Screen + camera takes.** A small camera card in a corner is only a few percent of the picture, so the GIF reads as a still. Pass the card's rectangle in video pixels as `focus.rect`. After the poster, the card grows over 0.4 s to 35% of the width, bottom-right, with its rounded corners and a soft shadow, and stays above the play-button wash so the face stays bright. Without `focus`, nothing changes.
 
 Defaults: 480 px wide (never enlarged), 10 fps, 256 colours, no dithering so faces stay clean, 800 KB budget. Over budget, it drops frames, then width, then colours, and reports each step. It never throws. A failure returns `{ ok: false, reason }` and you keep the still poster.
 

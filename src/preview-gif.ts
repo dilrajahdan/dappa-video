@@ -37,7 +37,7 @@ export type PreviewFocus = {
   radius?: number;
   /** Extra source pixels around `rect`, so a thin border comes along. Default 2. */
   pad?: number;
-  /** Enlarged card width as a share of the output width. Default 0.4. */
+  /** Enlarged card width as a share of the output width. Default 0.35. */
   size?: number;
   /** Where the enlarged card sits. Default "br", bottom-right. */
   corner?: "tl" | "tr" | "bl" | "br";
@@ -103,7 +103,7 @@ export function focusLayout(
   const margin = Math.round(
     Math.min(output.width, output.height) * Math.max(0, focus.margin ?? 0.04),
   );
-  const size = Math.max(0.05, Math.min(1, focus.size ?? 0.4));
+  const size = Math.max(0.05, Math.min(1, focus.size ?? 0.35));
   let w = Math.min(output.width * size, output.width - 2 * margin);
   let h = (w * source.h) / source.w;
   const maxH = output.height - 2 * margin;

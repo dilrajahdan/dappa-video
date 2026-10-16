@@ -468,7 +468,7 @@ describe("createPreviewGif in the browser", () => {
     expect(cards).toHaveLength(10);
     const last = cards[cards.length - 1][1] as number[];
     expect(last.slice(1, 5)).toEqual([1033, 536, 220, 157]);
-    expect(Math.round(last[7])).toBe(192);
+    expect(Math.round(last[7])).toBe(168);
     if (!result.ok) throw new Error(result.message);
     expect(result.bytes).toBeLessThanOrEqual(2_000);
     expect(result.steps[0]).toBe("fewer-frames");
@@ -556,15 +556,15 @@ describe("face focus layout", () => {
     expect(layout.dest.h).toBeCloseTo(157 * 0.375);
   });
 
-  it("ends at 40% of the output width, bottom-right with a margin, aspect kept", () => {
+  it("ends at 35% of the output width, bottom-right with a margin, aspect kept", () => {
     const layout = focusLayout(source, output, focus, 1);
     if (!layout) throw new Error("expected a layout");
     const margin = Math.round(270 * 0.04);
-    expect(layout.dest.w).toBeCloseTo(192);
-    expect(layout.dest.h).toBeCloseTo((192 * 157) / 220);
+    expect(layout.dest.w).toBeCloseTo(168);
+    expect(layout.dest.h).toBeCloseTo((168 * 157) / 220);
     expect(layout.dest.x + layout.dest.w).toBeCloseTo(480 - margin);
     expect(layout.dest.y + layout.dest.h).toBeCloseTo(270 - margin);
-    expect(layout.radius).toBeCloseTo(13 * (192 / 220));
+    expect(layout.radius).toBeCloseTo(13 * (168 / 220));
   });
 
   it("honours size and corner", () => {

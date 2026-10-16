@@ -43,7 +43,7 @@ Source must be a drawable, decoded image/video/canvas. Size is fitted inside the
 | `maxColors` / `dither` | 256 / `"none"`, or `"ordered"` |
 | `drawOverlay(ctx, width, height)` / `overlayOn` | None / `"all"`, or `"first"` |
 | `firstFrame` | `"poster"`, `"none"`, or your stored poster as a Blob or image (drawn as-is) |
-| `focus` | None. `{ rect, radius?, pad?, size?, corner?, margin?, easeSeconds?, shadow? }`: defaults pad 2 px, size 0.4 of width, `"br"`, margin 0.04, ease 0.4 s, shadow on |
+| `focus` | None. `{ rect, radius?, pad?, size?, corner?, margin?, easeSeconds?, shadow? }`: defaults pad 2 px, size 0.35 of width, `"br"`, margin 0.04, ease 0.4 s, shadow on |
 | `posterSeconds` / `firstFrameSeconds` | 1 s (or half a shorter video) / 0.6 s |
 | `holdLastSeconds` / `timeoutMs` | 0 / 20,000 |
 
